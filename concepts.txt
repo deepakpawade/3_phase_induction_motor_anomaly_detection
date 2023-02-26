@@ -130,3 +130,8 @@ anomalies_freq = np.where(peak_freqs > thresh_freq)[0]
 This code calculates the mean and standard deviation of the peak frequency data and defines a threshold for detecting anomalies as three standard deviations away from the mean. Any peak frequency values that fall outside this threshold are identified as potential anomalies and stored in the anomalies_freq array.
 
 You can use a similar approach to detect anomalies in the mean current data or any other features you extract from your data. However, keep in mind that the choice of threshold and statistical method may vary depending on your specific application and dataset, and you may need to adjust these parameters based on your domain knowledge and the performance of your ML model.
+
+
+
+FFT (Fast Fourier Transform) is used to convert a signal from time domain to frequency domain. In this context, by using FFT on the current sensor data, we can identify the frequencies at which the current is changing. This is because when a machine is running properly, the current will have a predictable pattern of frequency changes. If an anomaly occurs, it can often be detected by changes in the frequency spectrum of the current. Therefore, by using FFT, we can identify potential anomalies by examining the frequency spectrum of the current data.
+
