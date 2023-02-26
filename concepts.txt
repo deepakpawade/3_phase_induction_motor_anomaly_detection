@@ -1,0 +1,132 @@
+Phases of current :
+https://www.youtube.com/watch?v=4oRT7PoXSS0 
+
+Two coils (on the stator, which holds the coils), up and down, Magnet rotates, disturbance in magnetic field cause 
+electrons to move. Due to poles changing, the current reverses. The change is 
+gradual since the fields are oval in shape and hence looks like a wave. 
+1 Cycle = 1 rotation = once up and once down, freq = cycles/rotations per sec. 
+
+1 phase : large gaps and probably not efficient. 
+
+2 Phase : 2 more coils, 120 degrees from first 2 coils from either side (side should be same for both). 
+3 Phase : add 2 more coils on the other side to the one chosen for 2 phase.
+
+
+Induction Motor:
+https://www.youtube.com/watch?v=AQqyGNOP_3o 
+2 parts :
+Stator : slots having 3 coil windings which carry 3 phase AC
+Rotor : Loop of conduction material on which EMF from the coils will induce a current.
+As per https://en.wikipedia.org/wiki/Lorentz_force, the coils will start to rotate.
+freq of current controls the speed.
+
+
+
+Dataset :
+each file has 10000 3-phase current readings. 
+
+# Import necessary libraries
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+# Load data into a Pandas dataframe
+df = pd.concat([pd.read_csv(f, header=None) for f in datafolder])
+
+# Rename columns
+df.columns = ['Current 1', 'Current 2', 'Current 3']
+
+# Perform motor current signature analysis and model-based VI analysis to detect anomalies
+# Create condition indicators and features to train an ML model
+# ...
+
+# Scale the data
+scaler = StandardScaler()
+scaled_df = scaler.fit_transform(df)
+
+# Train an Isolation Forest model on the scaled data
+model = IsolationForest(n_estimators=100, contamination=0.01)
+model.fit(scaled_df)
+
+# Use the trained model to predict anomalies in new data
+# ...
+
+
+
+# The three columns most likely represent the current readings of each phase of the 3-phase AC motor.
+# However, without more information about the data, it's impossible to know for sure.
+This code loads the data from the specified folder, renames the columns, scales the data, trains an Isolation Forest model on the scaled data, and then uses the model to predict anomalies in new data. However, you will need to perform motor current signature analysis and model-based VI analysis to create condition indicators and features to train the ML model.
+
+As for the three columns, they most likely represent the current readings of each phase of the 3-phase AC motor. However, without more information about the data, it's impossible to know for sure.
+
+Motor current signature analysis (MCSA): This is a technique used to analyze the electrical signals produced by an electric motor, such as the 3-phase induction motor in your case. MCSA involves taking current readings from each phase of the motor and analyzing the frequency spectrum of these readings. By analyzing the spectrum, you can identify any anomalies or patterns that may indicate a potential fault or failure in the motor. MCSA can be used to detect various types of faults, such as broken rotor bars, bearing defects, and winding faults.
+
+Model-based VI analysis: VI stands for vibration and current analysis, and this is another technique used to detect anomalies in electric motors. Model-based VI analysis involves creating a mathematical model of the motor and using it to predict the expected behavior of the motor's electrical and mechanical signals. Any deviations from the expected behavior can then be flagged as potential anomalies. This technique is particularly useful for detecting faults in the mechanical components of the motor, such as bearings and gears.
+
+Once you have performed MCSA and model-based VI analysis on your data, you can create condition indicators and features that can be used to train an ML model. Condition indicators are parameters that reflect the health of the motor, such as vibration levels or temperature readings, while features are specific characteristics of the data that can be used to train a model to predict anomalies. Some examples of features that could be extracted from your data include frequency spectrum peaks, statistical properties of the data, and time-domain features. By combining MCSA, model-based VI analysis, and feature engineering, you can create a robust ML model that can accurately predict anomalies in your 3-phase induction motor.
+
+
+Motor Current Signal analysis : Observing frequency spectrum to identify anomalies
+Vib and current analysis : Create a mathematical model that predicts normal behaviour. Any deviation can be flagged as potential anomalies 
+
+
+How to do motor current signature analysis and model-based VI analysis to be done to detect anomalies in python on the given dataset
+
+Performing motor current signature analysis and model-based VI analysis in Python can be done using various libraries and tools. Here are some steps you could follow to perform these analyses on your given dataset:
+
+Load the data: You can use the pandas library to read in the text files in your data folder and combine them into a single dataframe.
+python
+Copy code
+import pandas as pd
+
+df = pd.concat([pd.read_csv(f, header=None) for f in datafolder])
+Perform motor current signature analysis: You can use the scipy library to perform Fourier transforms on the current readings from each phase of the motor and plot the resulting frequency spectra. This will help you identify any anomalies or patterns in the spectra that may indicate a fault in the motor.
+python
+Copy code
+from scipy.fft import fft
+
+fft_data = fft(df)
+Perform model-based VI analysis: To perform model-based VI analysis, you will need to create a mathematical model of the motor that takes into account both its electrical and mechanical behavior. This can be done using tools like MATLAB/Simulink or Python libraries like pyEMD. Once you have created the model, you can use it to predict the expected behavior of the motor's electrical and mechanical signals and compare it to the actual behavior to detect any anomalies.
+scss
+Copy code
+import pyEMD
+
+emd = pyEMD.EMD()
+
+imfs = emd(df)
+Create condition indicators and features: Based on the results of your MCSA and model-based VI analyses, you can create condition indicators and features that can be used to train an ML model. For example, you might extract frequency spectrum peaks, statistical properties of the data, or time-domain features.
+python
+Copy code
+import numpy as np
+
+peak_freqs = np.argmax(fft_data, axis=1)
+mean_currents = np.mean(df, axis=1)
+By following these steps, you can perform motor current signature analysis and model-based VI analysis on your dataset in Python and extract relevant features for training an ML model to detect anomalies in the motor. However, keep in mind that these analyses can be complex and require domain expertise to perform effectively.
+
+
+How to detect anomalies from peak_freqs = np.argmax(fft_data, axis=1)
+mean_currents = np.mean(df, axis=1)?
+
+Please write in English language.
+Once you have extracted the frequency spectrum peaks and mean currents from your data using the code peak_freqs = np.argmax(fft_data, axis=1) and mean_currents = np.mean(df, axis=1), respectively, you can use these features to detect anomalies in the motor.
+
+There are various ways to detect anomalies, but one common method is to use a statistical approach based on the distribution of the feature values. For example, you could calculate the mean and standard deviation of the feature values and define a threshold for detecting anomalies based on how many standard deviations away from the mean a value is. Any feature values that fall outside this threshold would be flagged as potential anomalies.
+
+Here's an example of how you could detect anomalies in the peak frequency data using this approach:
+
+makefile
+Copy code
+import numpy as np
+
+# Calculate mean and standard deviation of peak frequency data
+mean_freq = np.mean(peak_freqs)
+std_freq = np.std(peak_freqs)
+
+# Define threshold for detecting anomalies
+thresh_freq = mean_freq + 3 * std_freq
+
+# Identify potential anomalies
+anomalies_freq = np.where(peak_freqs > thresh_freq)[0]
+This code calculates the mean and standard deviation of the peak frequency data and defines a threshold for detecting anomalies as three standard deviations away from the mean. Any peak frequency values that fall outside this threshold are identified as potential anomalies and stored in the anomalies_freq array.
+
+You can use a similar approach to detect anomalies in the mean current data or any other features you extract from your data. However, keep in mind that the choice of threshold and statistical method may vary depending on your specific application and dataset, and you may need to adjust these parameters based on your domain knowledge and the performance of your ML model.
