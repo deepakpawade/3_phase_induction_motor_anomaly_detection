@@ -1,3 +1,26 @@
+Detect anomaly and alert defects from an unstructured data pool received from current sensors of a 3-phase induction motor at a rate of 10K - 15K instances per second. 
+
+Dataset:
+https://drive.google.com/drive/folders/1d70I-XacHhA7i7MsVQa-iFJvp2nTiayA?usp=share_link
+
+the data set contains current readings of a 3-phase AC motor (3.2hp) 
+motor current signature analysis and model-based VI analysis to be done to detect anomalies 
+
+Structure/process the data, create condition indicators, create an ML model, and create features to train the model.  The model should learn, and predict future anomalies. 
+For other data, you can get data set from kaggle or other online sources as well.
+
+Study on MCSA, model-based VI analysis, and how they're applied to predict machine failure.
+
+Timeline: 48hrs (from the day you receive the task)
+How to submit:
+Share it on GitHub or GitLab with proper documentation 
+1. what you have done - logic
+2. how it can be set up and tested in an isolated system (share deployable/dockerized code)
+3. create an anomaly in the data set provided and show that your code can detect it (TDD testing)
+
+
+
+
 Phases of current :
 https://www.youtube.com/watch?v=4oRT7PoXSS0 
 
@@ -24,6 +47,13 @@ freq of current controls the speed.
 
 Dataset :
 each file has 10000 3-phase current readings. 
+There are 317 files, which means the readings were taken for 317 seconds. 
+There are 3 columns in each file represent the 3 currents.
+Based on the information provided, it seems unlikely that the frequency of the 
+current supplied is 10K Hz, as this is much higher than the typical frequency of AC power in most regions,
+which is usually around 50-60 Hz. It's possible that the data is being sampled at a rate 
+of 10K-15K Hz, but this would not necessarily reflect the frequency of the current itself.
+
 
 # Import necessary libraries
 import pandas as pd
@@ -67,7 +97,8 @@ Once you have performed MCSA and model-based VI analysis on your data, you can c
 
 
 Motor Current Signal analysis : Observing frequency spectrum to identify anomalies
-Vib and current analysis : Create a mathematical model that predicts normal behaviour. Any deviation can be flagged as potential anomalies 
+Vib and current analysis : Create a mathematical model that predicts normal behaviour.
+Any deviation can be flagged as potential anomalies 
 
 
 How to do motor current signature analysis and model-based VI analysis to be done to detect anomalies in python on the given dataset
@@ -137,11 +168,15 @@ FFT (Fast Fourier Transform) is used to convert a signal from time domain to fre
 
 MCSA is a technique used to detect faults in induction motors by analyzing the current signals that the motors produce. In a healthy motor, the current signals should be smooth and sinusoidal. However, when there is a fault in the motor, the current signals can become distorted, and the shape of the signal can change.
 
-One common fault that MCSA can detect is broken rotor bars. Broken rotor bars can cause the current signals in the motor to become uneven, and the difference in current readings between different phases of the motor can increase. The equation BrokenRotorBars = abs(current_1) - abs(current_2) calculates this difference in current readings between phases 1 and 2, which can be used as a condition indicator for broken rotor bars.
+One common fault that MCSA can detect is broken rotor bars. Broken rotor bars can cause the current signals in the motor to become uneven, and the difference in current readings between different phases of the motor can increase. 
+The equation BrokenRotorBars = abs(current_1) - abs(current_2) calculates this difference in current readings between phases 1 and 2, which can be used as a condition indicator for broken rotor bars.
 
-Bearing faults can also be detected using MCSA. When there is a fault in a motor bearing, the current signals can become noisy, and the difference in current readings between different phases of the motor can change. The equation BearingFault = abs(current_2) - abs(current_3) calculates this difference in current readings between phases 2 and 3, which can be used as a condition indicator for bearing faults.
+Bearing faults can also be detected using MCSA. When there is a fault in a motor bearing, the current signals can become noisy, and the difference in current readings between different phases of the motor can change. 
+The equation BearingFault = abs(current_2) - abs(current_3) calculates this difference in current readings between phases 2 and 3, which can be used as a condition indicator for bearing faults.
 
-Finally, eccentricity is a fault that can occur when the motor's rotor is not perfectly centered in the stator. This can cause the current signals to become uneven, and the difference in current readings between different phases of the motor can change. The equation Eccentricity = abs(current_3) - abs(current_1) calculates this difference in current readings between phases 3 and 1, which can be used as a condition indicator for eccentricity faults.
+Finally, eccentricity is a fault that can occur when the motor's rotor is not perfectly centered in the stator. 
+This can cause the current signals to become uneven, and the difference in current readings 
+between different phases of the motor can change. The equation Eccentricity = abs(current_3) - abs(current_1) calculates this difference in current readings between phases 3 and 1, which can be used as a condition indicator for eccentricity faults.
 
 Detect anomaly and alert defects from an unstructured data pool received from current sensors of a 3-phase induction motor at a rate of 10K - 15K instances per second. 
 the data set contains current readings of a 3-phase AC motor (3.2hp).
