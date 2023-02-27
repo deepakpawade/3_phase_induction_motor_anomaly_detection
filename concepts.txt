@@ -135,3 +135,15 @@ You can use a similar approach to detect anomalies in the mean current data or a
 
 FFT (Fast Fourier Transform) is used to convert a signal from time domain to frequency domain. In this context, by using FFT on the current sensor data, we can identify the frequencies at which the current is changing. This is because when a machine is running properly, the current will have a predictable pattern of frequency changes. If an anomaly occurs, it can often be detected by changes in the frequency spectrum of the current. Therefore, by using FFT, we can identify potential anomalies by examining the frequency spectrum of the current data.
 
+MCSA is a technique used to detect faults in induction motors by analyzing the current signals that the motors produce. In a healthy motor, the current signals should be smooth and sinusoidal. However, when there is a fault in the motor, the current signals can become distorted, and the shape of the signal can change.
+
+One common fault that MCSA can detect is broken rotor bars. Broken rotor bars can cause the current signals in the motor to become uneven, and the difference in current readings between different phases of the motor can increase. The equation BrokenRotorBars = abs(current_1) - abs(current_2) calculates this difference in current readings between phases 1 and 2, which can be used as a condition indicator for broken rotor bars.
+
+Bearing faults can also be detected using MCSA. When there is a fault in a motor bearing, the current signals can become noisy, and the difference in current readings between different phases of the motor can change. The equation BearingFault = abs(current_2) - abs(current_3) calculates this difference in current readings between phases 2 and 3, which can be used as a condition indicator for bearing faults.
+
+Finally, eccentricity is a fault that can occur when the motor's rotor is not perfectly centered in the stator. This can cause the current signals to become uneven, and the difference in current readings between different phases of the motor can change. The equation Eccentricity = abs(current_3) - abs(current_1) calculates this difference in current readings between phases 3 and 1, which can be used as a condition indicator for eccentricity faults.
+
+Detect anomaly and alert defects from an unstructured data pool received from current sensors of a 3-phase induction motor at a rate of 10K - 15K instances per second. 
+the data set contains current readings of a 3-phase AC motor (3.2hp).
+
+Does this mean the frequency of the current supplied is 10K Hz? But usually its 50-60Hz?
