@@ -4,6 +4,12 @@ import os
 import pandas as pd
 from typing import Dict
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.svm import OneClassSVM
+from tqdm import tqdm
+from scipy.spatial.distance import mahalanobis
+
 
 class ElectricalFeatureExtractor:
     """
@@ -105,7 +111,13 @@ class ElectricalFeatureExtractor:
 
         # extract magnitudes of harmonic components
         harmonic_magnitudes = np.abs(fft_data[harmonic_indices])
-        return harmonic_magnitudes
+
+        # normalize harmonic magnitudes using z-score normalization
+        mean = np.mean(harmonic_magnitudes)
+        std = np.std(harmonic_magnitudes)
+        harmonic_magnitudes_normalized = (harmonic_magnitudes - mean) / std
+
+        return harmonic_magnitudes_normalized
 
     def _get_thd(self, fft_data: np.ndarray, sampling_rate: int, fundamental_frequency: int) -> float:
         """
@@ -161,8 +173,210 @@ class ElectricalFeatureExtractor:
         return {'fft_data': fft_data, 'harmonic_magnitudes': harmonic_magnitudes, 'thd': thd, 'rms_current': rms_current, 'current_unbalance': current_unbalance}
 
 
-# class AnomalyDetector:
-    
+class AnomalyDetector:
+    """
+        Anomaly detection class that uses three different algorithms to detect anomalies in test data.
+
+        Attributes:
+            None
+
+        Methods:
+            get_predictions: Takes in normal data and test data and uses three different algorithms to detect
+                anomalies in the test data. Returns the number of anomalies detected by each algorithm.
+            mahalanobis_distance: Calculates the Mahalanobis distance between normal data features and test data
+                features and flags any test data feature vectors with a distance greater than a specified threshold
+                as anomalous.
+        """
+    def get_predictions(self, normal_data, test_data):
+        """
+        Use three different algorithms to detect anomalies in test data.
+
+        Args:
+            normal_data: A numpy array containing the normal data used to train the algorithms.
+            test_data: A numpy array containing the test data to be analyzed for anomalies.
+
+        Returns:
+            A tuple containing the number of anomalies detected by each algorithm.
+        """
+        # Initialize anomaly detection algorithms
+        iforest = IsolationForest(n_estimators=100, contamination=0.05)
+        lof = LocalOutlierFactor(n_neighbors=20, contamination=0.05)
+        ocsvm = OneClassSVM(kernel='rbf', nu=0.05)
+
+        # Initialize progress bars for fitting
+        iforest_fit_bar = tqdm(total=3, desc="Fitting Isolation Forest")
+        lof_fit_bar = tqdm(total=3, desc="Fitting Local Outlier Factor")
+        ocsvm_fit_bar = tqdm(total=3, desc="Fitting One-Class SVM")
+
+        # Fit models on normal data
+        iforest.fit(normal_data)
+        iforest_fit_bar.update(1)
+        lof.fit(normal_data)
+        lof_fit_bar.update(1)
+        ocsvm.fit(normal_data)
+        ocsvm_fit_bar.update(1)
+
+        # Close fitting progress bars
+        iforest_fit_bar.close()
+        lof_fit_bar.close()
+        ocsvm_fit_bar.close()
+
+        # Initialize progress bars for predicting
+        iforest_pred_bar = tqdm(total=len(test_data), desc="Isolation Forest")
+        lof_pred_bar = tqdm(total=len(test_data), desc="Local Outlier Factor")
+        ocsvm_pred_bar = tqdm(total=len(test_data), desc="One-Class SVM")
+
+        # Predict anomalies in test data
+        iforest_preds = []
+        lof_preds = []
+        ocsvm_preds = []
+        for i, data_point in enumerate(test_data):
+            iforest_pred = iforest.predict([data_point])[0]
+            lof_pred = lof.predict([data_point])[0]
+            ocsvm_pred = ocsvm.predict([data_point])[0]
+            iforest_preds.append(iforest_pred)
+            lof_preds.append(lof_pred)
+            ocsvm_preds.append(ocsvm_pred)
+            iforest_pred_bar.update(1)
+            lof_pred_bar.update(1)
+            ocsvm_pred_bar.update(1)
+
+        # Close predicting progress bars
+        iforest_pred_bar.close()
+        lof_pred_bar.close()
+        ocsvm_pred_bar.close()
+
+        # Print number of anomalies detected by each algorithm
+        print("Isolation Forest: ", np.count_nonzero(iforest_preds == -1))
+        print("Local Outlier Factor: ", np.count_nonzero(lof_preds == -1))
+        print("One-Class SVM: ", np.count_nonzero(ocsvm_preds == -1))
+
+
+
+
+    def mahalanobis_distance(normal_features, test_features, threshold=3.0):
+        """
+        Computes the Mahalanobis distance between each test data feature vector and the normal mean vector, and flags any
+        test data feature vectors that have a Mahalanobis distance greater than the threshold as anomalous.
+
+        Args:
+            normal_features (dict): A dictionary containing the normal data features with keys 'harmonic_magnitudes', 
+                                    'thd', 'rms_current', and 'current_unbalance'.
+            test_features (dict): A dictionary containing the test data features with keys 'harmonic_magnitudes', 'thd', 
+                                'rms_current', and 'current_unbalance'.
+            threshold (float): The threshold distance value based on the desired level of anomaly detection sensitivity. 
+                            Defaults to 3.0.
+
+        Returns:
+            None: The function prints a message indicating whether any anomalous feature vectors were detected or not.
+
+        """
+        
+        # Extract normal and test data features
+        normal_data = {
+            'harmonic_magnitudes': normal_features['harmonic_magnitudes'],
+            'thd': normal_features['thd'],
+            'rms_current': normal_features['rms_current'].values,
+            'current_unbalance': normal_features['current_unbalance']
+        }
+        
+        test_data = {
+            'harmonic_magnitudes': test_features['harmonic_magnitudes'],
+            'thd': test_features['thd'],
+            'rms_current': test_features['rms_current'].values,
+            'current_unbalance': test_features['current_unbalance']
+        }
+
+        # Compute mean and covariance matrix of normal data features
+        normal_mean = np.mean(normal_data['harmonic_magnitudes'], axis=0)
+        normal_cov = np.cov(normal_data['harmonic_magnitudes'].T)
+
+        # Compute the Mahalanobis distance between each test data feature vector and the normal mean vector
+        distances = []
+        for i in range(test_data['harmonic_magnitudes'].shape[0]):
+            distance = mahalanobis(test_data['harmonic_magnitudes'][i], normal_mean, np.linalg.inv(normal_cov))
+            distances.append(distance)
+
+        # Flag any test data feature vectors that have a Mahalanobis distance greater than the threshold as anomalous
+        anomalous_indices = np.where(np.array(distances) > threshold)[0]
+        if anomalous_indices.size > 0:
+            print("Anomalous feature vectors detected at indices:", anomalous_indices)
+        else:
+            print("No anomalous feature vectors detected.")
+
+class AnomalyGenerator:
+    """
+    This class generates anomalies in a given Pandas DataFrame by adding noise to its data.
+
+    Parameters:
+    -----------
+    None
+
+    Methods:
+    --------
+    add_anomalies(dataframe, number_of_anomalies=0, data_length=0)
+        Adds anomalies to the given DataFrame and returns a new DataFrame with added noise.
+
+        Parameters:
+        -----------
+        dataframe : pandas.DataFrame
+            The DataFrame to which anomalies should be added.
+
+        number_of_anomalies : int (default: 0)
+            The number of anomalies to add. If 0, it adds anomalies to the entire DataFrame.
+
+        data_length : int (default: 0)
+            The length of data to which anomalies should be added. If 0, it adds anomalies to the entire DataFrame.
+
+        Returns:
+        --------
+        pandas.DataFrame
+            A new DataFrame with added noise, representing the anomalous data.
+    """
+
+
+    def add_anomalies(self, dataframe, number_of_anomalies=0, data_length=0):
+        """
+        Adds anomalies to the given DataFrame and returns a new DataFrame with added noise.
+
+        Parameters:
+        -----------
+        dataframe : pandas.DataFrame
+            The DataFrame to which anomalies should be added.
+
+        number_of_anomalies : int (default: 0)
+            The number of anomalies to add. If 0, it adds anomalies to the entire DataFrame.
+
+        data_length : int (default: 0)
+            The length of data to which anomalies should be added. If 0, it adds anomalies to the entire DataFrame.
+
+        Returns:
+        --------
+        pandas.DataFrame
+            A new DataFrame with added noise, representing the anomalous data.
+        """
+
+        # Determine the upper bound of the data to which anomalies should be added.
+        upper_bound = number_of_anomalies if number_of_anomalies else len(dataframe)
+        
+        # Determine the length of the data to which anomalies should be added.
+        length = data_length if data_length else len(dataframe)
+
+        # Make a deep copy of the data up to the upper bound and length.
+        df = copy.deepcopy(dataframe[0:length].iloc[:upper_bound+1,:])
+
+        # Calculate the noise amplitude based on the signal amplitude.
+        noise_amplitude = 0.1 * np.max(np.abs(df))
+
+        # Add noise to the signal using amplitude scaling.
+        noise = np.random.normal(0, noise_amplitude, df.shape)
+        
+        df += noise
+
+        return df
+
+
+
 #     def DecisionTreeClassifier():
 
 #         # Create a dataset with features and labels
@@ -189,3 +403,4 @@ class ElectricalFeatureExtractor:
 
 #         # Print the predicted labels
 #         print("Predicted labels:", y_pred)
+
