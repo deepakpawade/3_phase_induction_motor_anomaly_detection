@@ -187,7 +187,7 @@ class AnomalyDetector:
                 features and flags any test data feature vectors with a distance greater than a specified threshold
                 as anomalous.
         """
-    def get_predictions(self, normal_data, test_data):
+    def get_predictions(normal_data, test_data):
         """
         Use three different algorithms to detect anomalies in test data.
 
@@ -355,6 +355,7 @@ class AnomalyGenerator:
         pandas.DataFrame
             A new DataFrame with added noise, representing the anomalous data.
         """
+        
 
         # Determine the upper bound of the data to which anomalies should be added.
         upper_bound = number_of_anomalies if number_of_anomalies else len(dataframe)
@@ -363,15 +364,16 @@ class AnomalyGenerator:
         length = data_length if data_length else len(dataframe)
 
         # Make a deep copy of the data up to the upper bound and length.
-        df = copy.deepcopy(dataframe[0:length].iloc[:upper_bound+1,:])
+        df = copy.deepcopy(dataframe[0:length])
+        noise_df = df.iloc[:upper_bound,:]
 
         # Calculate the noise amplitude based on the signal amplitude.
         noise_amplitude = 0.1 * np.max(np.abs(df))
 
         # Add noise to the signal using amplitude scaling.
-        noise = np.random.normal(0, noise_amplitude, df.shape)
+        noise = np.random.normal(0, noise_amplitude, noise_df.shape)
         
-        df += noise
+        df.iloc[:upper_bound,:] += noise
 
         return df
 
