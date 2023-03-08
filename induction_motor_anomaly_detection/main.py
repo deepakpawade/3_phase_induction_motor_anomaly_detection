@@ -6,7 +6,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.model_selection import train_test_split
 import os
 import matplotlib.pyplot as plt
-import modules
+import modules,scaler
 import sys
 import warnings
 
@@ -39,8 +39,26 @@ normal_data = pd.read_csv('./data/combined_data.csv')
 anomalous_data = pd.read_csv('./anomalous_data/anomalous_data.csv')
 
 
-benchmark_features = modules.ElectricalFeatureExtractor(current_data=normal_data)
-test_features = modules.ElectricalFeatureExtractor(current_data=anomalous_data)
-detector = modules.AnomalyDetector
-detector.mahalanobis_distance(benchmark_features.feature_dictionary,test_features.feature_dictionary)
-detector.get_predictions(normal_data,anomalous_data)
+
+
+# Gaussian Mixture approach 
+train_data_features = modules.ElectricalFeatureExtractor(current_data=normal_data)
+test_data_features = modules.ElectricalFeatureExtractor(current_data=anomalous_data)
+train_scaler = scaler.Scaler()
+train_scaler.fit_unlabelled_data(train_data_features.feature_dataframe[0])
+train_scaled = train_scaler.transform(train_data_features.feature_dataframe[0])
+test_scaled = train_scaler.transform(test_data_features.feature_dataframe[0])
+print(test_scaled,train_scaled)
+modules.AnomalyDetector.GaussianMixture(train_feature_dataframe=train_scaled, test_feature_dataframe=test_scaled)
+
+
+
+
+
+
+
+# benchmark_features = modules.ElectricalFeatureExtractor(current_data=normal_data)
+# test_features = modules.ElectricalFeatureExtractor(current_data=anomalous_data)
+# detector = modules.AnomalyDetector
+# detector.mahalanobis_distance(benchmark_features.feature_dictionary,test_features.feature_dictionary)
+# detector.get_predictions(normal_data,anomalous_data)

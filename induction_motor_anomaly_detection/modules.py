@@ -9,7 +9,7 @@ from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
 from tqdm import tqdm
 from scipy.spatial.distance import mahalanobis
-
+from sklearn.mixture import GaussianMixture
 
 class ElectricalFeatureExtractor:
     """
@@ -49,6 +49,8 @@ class ElectricalFeatureExtractor:
         self.fft_data = self._get_fft(self.current_data)
         self.feature_dictionary = self._extract_features(
             self.current_data, self.fft_data, sampling_rate, fundamental_frequency)
+        self.feature_dataframe = self._get_features(self.current_data)
+
 
     def _get_fft(self, df):
         """
@@ -90,7 +92,7 @@ class ElectricalFeatureExtractor:
         rms_current = np.sqrt(np.mean(df**2))
         return rms_current
 
-    def _get_harmonic_magnitudes(self, fft_data: np.ndarray, fs=10000, ffreq=50):
+    def _get_harmonic_magnitudes(self, fft_data: np.ndarray, fs=10000, ffreq=50, normalized = False):
         """
         Calculates the magnitudes of the harmonic components from the FFT of the current waveform data.
 
@@ -112,12 +114,13 @@ class ElectricalFeatureExtractor:
         # extract magnitudes of harmonic components
         harmonic_magnitudes = np.abs(fft_data[harmonic_indices])
 
+        if normalized:
         # normalize harmonic magnitudes using z-score normalization
-        mean = np.mean(harmonic_magnitudes)
-        std = np.std(harmonic_magnitudes)
-        harmonic_magnitudes_normalized = (harmonic_magnitudes - mean) / std
+            mean = np.mean(harmonic_magnitudes)
+            std = np.std(harmonic_magnitudes)
+            harmonic_magnitudes = (harmonic_magnitudes - mean) / std
 
-        return harmonic_magnitudes_normalized
+        return harmonic_magnitudes
 
     def _get_thd(self, fft_data: np.ndarray, sampling_rate: int, fundamental_frequency: int) -> float:
         """
@@ -172,21 +175,104 @@ class ElectricalFeatureExtractor:
         # Return a tuple containing the computed electrical features.
         return {'fft_data': fft_data, 'harmonic_magnitudes': harmonic_magnitudes, 'thd': thd, 'rms_current': rms_current, 'current_unbalance': current_unbalance}
 
+    def _get_features(self,df):
+        """
+        Computes various features of the input DataFrame using the following steps:
+        1. Groups the data into segments of 10000 data points and computes the mean, variance, and standard deviation of each segment
+        2. Computes the harmonic magnitudes, total harmonic distortion, root-mean-square current, and current unbalance for each segment using the Fast Fourier Transform (FFT)
+        3. Adds the computed features to the DataFrame
+
+        Args:
+        df (pandas.DataFrame): Input DataFrame of power consumption data
+
+        Returns:
+        list: A list containing the DataFrame of computed features and the FFT data
+        """
+        
+        features = df.groupby(df.index // 10000).agg(['mean', 'var', 'std'])
+        mags = []
+        thds = []
+        rmss = []
+        unbals = []
+        fft_data = np.fft.fft(df)
+        for i in range(0,df.shape[0],10000):
+            mags.append(self._get_harmonic_magnitudes(fft_data[i:i+10000]))
+            thds.append(self._get_thd(fft_data[i:i+10000], 10000, 50))
+            rmss.append(self._get_rms_current(df[i:i+10000]))
+            unbals.append(self._get_current_unbalance(fft_data[i:i+10000]))
+
+            
+        for i, row in features.iterrows():
+            harmonic_magnitudes = mags[i]
+            thd = thds[i]
+            rms = rmss[i]
+            unbal = unbals[i]
+            features.loc[i, ('current_1', 'harmonic_2')] = harmonic_magnitudes[0][0]
+            features.loc[i, ('current_1', 'harmonic_3')] = harmonic_magnitudes[0][1]
+            features.loc[i, ('current_1', 'harmonic_4')] = harmonic_magnitudes[0][2]
+            features.loc[i, ('current_2', 'harmonic_2')] = harmonic_magnitudes[1][0]
+            features.loc[i, ('current_2', 'harmonic_3')] = harmonic_magnitudes[1][1]
+            features.loc[i, ('current_2', 'harmonic_4')] = harmonic_magnitudes[1][2]
+            features.loc[i, ('current_3', 'harmonic_2')] = harmonic_magnitudes[2][0]
+            features.loc[i, ('current_3', 'harmonic_3')] = harmonic_magnitudes[2][1]
+            features.loc[i, ('current_3', 'harmonic_4')] = harmonic_magnitudes[2][2]
+
+            features.loc[i, ('current_1', 'thd')] = thd[0]
+            features.loc[i, ('current_2', 'thd')] = thd[1]
+            features.loc[i, ('current_3', 'thd')] = thd[2]
+
+            features.loc[i, ('current_1', 'rms')] = rms[0]
+            features.loc[i, ('current_2', 'rms')] = rms[1]
+            features.loc[i, ('current_3', 'rms')] = rms[2]
+            features.loc[i, ('current_unbalance', '')] = unbal
+        features.columns = features.columns.to_flat_index()
+        features.columns = ['_'.join(column) for column in features.columns]
+        return [features, fft_data]
+
 
 class AnomalyDetector:
     """
-        Anomaly detection class that uses three different algorithms to detect anomalies in test data.
+    Anomaly detection class that uses three different algorithms to detect anomalies in test data.
 
-        Attributes:
-            None
+    Attributes:
+        None
 
-        Methods:
-            get_predictions: Takes in normal data and test data and uses three different algorithms to detect
-                anomalies in the test data. Returns the number of anomalies detected by each algorithm.
-            mahalanobis_distance: Calculates the Mahalanobis distance between normal data features and test data
-                features and flags any test data feature vectors with a distance greater than a specified threshold
-                as anomalous.
+    Methods:
+        get_predictions: Takes in normal data and test data and uses three different algorithms to detect
+            anomalies in the test data. Returns the number of anomalies detected by each algorithm.
+        mahalanobis_distance: Calculates the Mahalanobis distance between normal data features and test data
+            features and flags any test data feature vectors with a distance greater than a specified threshold
+            as anomalous.
+    """
+    
+    def GaussianMixture(train_feature_dataframe, test_feature_dataframe ,n_components=1, covariance_type='full', k_threshold_std_dev = 3):
         """
+        Perform anomaly detection using Gaussian Mixture Model.
+        Parameters:
+        train_feature_dataframe (pandas.DataFrame): Dataframe containing training data features
+        test_feature_dataframe (pandas.DataFrame): Dataframe containing test data features
+        n_components (int): Number of Gaussian distributions to fit
+        covariance_type (str): Type of covariance matrix to use, can be 'full', 'tied', 'diag', 'spherical'
+        k_threshold_std_dev (float): Number of standard deviations below the mean to set the anomaly threshold
+
+        Returns:
+        None, but prints 'anomalous' or 'not anomalous' depending on whether the test data is considered an anomaly.
+        """
+        gmm = GaussianMixture(n_components=1, covariance_type='full')
+        gmm.fit(train_feature_dataframe)
+        scores = gmm.score_samples(train_feature_dataframe)
+        k =  k_threshold_std_dev
+        mean_score = np.mean(scores)
+        std_score = np.std(scores)
+        threshold = mean_score - k * std_score
+        is_anomaly = gmm.score_samples(test_feature_dataframe) < -50
+        if is_anomaly:
+            print('anomalous')
+        else:
+            print('not anomalous')
+
+
+
     def get_predictions(normal_data, test_data):
         """
         Use three different algorithms to detect anomalies in test data.
@@ -376,7 +462,6 @@ class AnomalyGenerator:
         df.iloc[:upper_bound,:] += noise
 
         return df
-
 
 
 #     def DecisionTreeClassifier():
