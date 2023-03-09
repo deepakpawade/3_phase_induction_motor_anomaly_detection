@@ -8,8 +8,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
 from tqdm import tqdm
-from scipy.spatial.distance import mahalanobis
 from sklearn.mixture import GaussianMixture
+from scipy.spatial.distance import mahalanobis
 
 class ElectricalFeatureExtractor:
     """
@@ -258,14 +258,14 @@ class AnomalyDetector:
         Returns:
         None, but prints 'anomalous' or 'not anomalous' depending on whether the test data is considered an anomaly.
         """
-        gmm = GaussianMixture(n_components=1, covariance_type='full')
+        gmm = GaussianMixture(n_components=n_components, covariance_type=covariance_type)
         gmm.fit(train_feature_dataframe)
         scores = gmm.score_samples(train_feature_dataframe)
         k =  k_threshold_std_dev
         mean_score = np.mean(scores)
         std_score = np.std(scores)
         threshold = mean_score - k * std_score
-        is_anomaly = gmm.score_samples(test_feature_dataframe) < -50
+        is_anomaly = gmm.score_samples(test_feature_dataframe) < threshold
         if is_anomaly:
             print('anomalous')
         else:
