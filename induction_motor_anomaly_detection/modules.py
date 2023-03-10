@@ -421,7 +421,7 @@ class AnomalyGenerator:
     """
 
 
-    def add_anomalies(self, dataframe, number_of_anomalies=0, data_length=0):
+    def add_anomalies_amplitude(self, dataframe, number_of_anomalies=0, data_length=0):
         """
         Adds anomalies to the given DataFrame and returns a new DataFrame with added noise.
 
@@ -462,6 +462,30 @@ class AnomalyGenerator:
         df.iloc[:upper_bound,:] += noise
 
         return df
+    
+    def add_noise_awgn():
+        # For electric signals, one way to add noise while preserving the signal 
+        # characteristics is by using a technique called additive white Gaussian noise (AWGN). 
+        # This technique adds random Gaussian noise to the signal while preserving the 
+        # frequency characteristics of the signal.
+        # Load the signal
+        signal = np.load('signal.npy')
+
+        # Calculate the power of the signal
+        signal_power = np.var(signal)
+
+        # Set the desired SNR in dB
+        snr_db = 10
+
+        # Calculate the noise power based on the desired SNR and the signal power
+        noise_power = signal_power / (10 ** (snr_db / 10))
+
+        # Generate random Gaussian noise with zero mean and the calculated noise power
+        noise = np.random.normal(0, np.sqrt(noise_power), size=signal.shape)
+
+        # Add the noise to the signal
+        noisy_signal = signal + noise
+        return noisy_signal
 
 
 #     def DecisionTreeClassifier():

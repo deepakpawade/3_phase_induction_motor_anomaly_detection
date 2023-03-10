@@ -49,7 +49,7 @@ Share it on GitHub or GitLab with proper documentation
 
 
 Dataset :
-each file has 10000 3-phase current readings. 
+each file has 10000 3-phase current readings and represents a timeframe of a second. 
 There are 317 files, which means the readings were taken for 317 seconds. 
 There are 3 columns in each file represent the 3 currents.
 Based on the information provided, it seems unlikely that the frequency of the 
