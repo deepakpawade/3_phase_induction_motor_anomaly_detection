@@ -30,13 +30,15 @@ normal_data = pd.read_csv('./data/combined_data.csv')
 # data['BrokenRotorBars'] = abs(data['current_1']) - abs(data['current_2'])
 # data['BearingFault'] = abs(data['current_2']) - abs(data['current_3'])
 # data['Eccentricity'] = abs(data['current_3']) - abs(data['current_1'])
+
+
 # normal_data.to_csv('./data/combined_data.csv', index=False)
 
 # creating anomalous data
 # anomalous = modules.AnomalyGenerator()
 # anomalous_data = anomalous.add_anomalies(normal_data,number_of_anomalies=1000,data_length=1000)
 # anomalous_data.to_csv('anomalous_data.csv', index=False)
-anomalous_data = pd.read_csv('./anomalous_data/anomalous_data.csv')
+anomalous_data = pd.read_csv('./anomalous_data/a_data2.txt')
 
 
 

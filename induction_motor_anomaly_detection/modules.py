@@ -346,7 +346,7 @@ class AnomalyDetector:
         test data feature vectors that have a Mahalanobis distance greater than the threshold as anomalous.
 
         Args:
-            normal_features (dict): A dictionary containing the normal data features with keys 'harmonic_magnitudes', 
+            normal_features (dict): A dictionary containing the normal data features with keys 'harmonic_magnitudes (scaled)', 
                                     'thd', 'rms_current', and 'current_unbalance'.
             test_features (dict): A dictionary containing the test data features with keys 'harmonic_magnitudes', 'thd', 
                                 'rms_current', and 'current_unbalance'.
@@ -390,9 +390,9 @@ class AnomalyDetector:
         else:
             print("No anomalous feature vectors detected.")
 
-class AnomalyGenerator:
+class NoiseGenerator:
     """
-    This class generates anomalies in a given Pandas DataFrame by adding noise to its data.
+    This class generates noise in a given Pandas DataFrame.
 
     Parameters:
     -----------
@@ -400,30 +400,43 @@ class AnomalyGenerator:
 
     Methods:
     --------
-    add_anomalies(dataframe, number_of_anomalies=0, data_length=0)
-        Adds anomalies to the given DataFrame and returns a new DataFrame with added noise.
+    add_noise_amplitude(dataframe, number_of_noises=0, data_length=0)
+        Adds noise to the given DataFrame and returns a new DataFrame with added noise.
 
         Parameters:
         -----------
         dataframe : pandas.DataFrame
             The DataFrame to which anomalies should be added.
 
-        number_of_anomalies : int (default: 0)
-            The number of anomalies to add. If 0, it adds anomalies to the entire DataFrame.
+        number_of_noises : int (default: 0)
+            The number of anomalies to add. If 0, it adds noise to the entire DataFrame.
 
         data_length : int (default: 0)
-            The length of data to which anomalies should be added. If 0, it adds anomalies to the entire DataFrame.
+            The length of data to which noise should be added. If 0, it adds anomalies to the entire DataFrame.
 
         Returns:
         --------
         pandas.DataFrame
-            A new DataFrame with added noise, representing the anomalous data.
-    """
+            A new DataFrame with added noise, representing the noisy data.
 
+    add_noise_awgn(signal)
+        Adds AWGN (additive white Gaussian noise) to a signal.
 
-    def add_anomalies_amplitude(self, dataframe, number_of_anomalies=0, data_length=0):
+        Parameters:
+        -----------
+        signal : numpy.ndarray
+            The signal to which noise should be added.
+
+        Returns:
+        --------
+        numpy.ndarray
+            A new signal with added noise.
         """
-        Adds anomalies to the given DataFrame and returns a new DataFrame with added noise.
+
+
+    def add_noise_amplitude(dataframe, number_of_noises=0, data_length=0):
+        """
+        Adds moise to the given DataFrame and returns a new DataFrame with added noise.
 
         Parameters:
         -----------
@@ -431,23 +444,23 @@ class AnomalyGenerator:
             The DataFrame to which anomalies should be added.
 
         number_of_anomalies : int (default: 0)
-            The number of anomalies to add. If 0, it adds anomalies to the entire DataFrame.
+            The number of noises to add. If 0, it adds anomalies to the entire DataFrame.
 
         data_length : int (default: 0)
-            The length of data to which anomalies should be added. If 0, it adds anomalies to the entire DataFrame.
+            The length of data to which noise should be added. If 0, it adds anomalies to the entire DataFrame.
 
         Returns:
         --------
         pandas.DataFrame
-            A new DataFrame with added noise, representing the anomalous data.
+            A new DataFrame with added noise, representing the noisy data.
         """
         
 
         # Determine the upper bound of the data to which anomalies should be added.
-        upper_bound = number_of_anomalies if number_of_anomalies else len(dataframe)
+        upper_bound = number_of_noises if number_of_noises else dataframe.shape[0]
         
         # Determine the length of the data to which anomalies should be added.
-        length = data_length if data_length else len(dataframe)
+        length = data_length if data_length else dataframe.shape[0]
 
         # Make a deep copy of the data up to the upper bound and length.
         df = copy.deepcopy(dataframe[0:length])
@@ -463,13 +476,22 @@ class AnomalyGenerator:
 
         return df
     
-    def add_noise_awgn():
-        # For electric signals, one way to add noise while preserving the signal 
-        # characteristics is by using a technique called additive white Gaussian noise (AWGN). 
+    def add_noise_awgn(signal):
+        """
+        Adds AWGN (additive white Gaussian noise) to a signal.
+
+        Parameters:
+        -----------
+        signal : numpy.ndarray
+            The signal to which noise should be added.
+
+        Returns:
+        --------
+        numpy.ndarray
+            A new signal with added noise.
+        """
         # This technique adds random Gaussian noise to the signal while preserving the 
         # frequency characteristics of the signal.
-        # Load the signal
-        signal = np.load('signal.npy')
 
         # Calculate the power of the signal
         signal_power = np.var(signal)
@@ -486,6 +508,84 @@ class AnomalyGenerator:
         # Add the noise to the signal
         noisy_signal = signal + noise
         return noisy_signal
+
+class AnomalyGenerator:
+    """
+    Introduces anomalies in the dataframe.
+    Anomalies include spikes, dropouts, drifts and transients.
+
+    """
+    @staticmethod
+    def introduce_spikes(df, magnitude=5, probability=0.01):
+        """
+        Add spikes to the data by randomly selecting some time points
+        and adding a sudden spike of a certain magnitude to the corresponding current value.
+        """
+        mask = np.random.choice([0, 1], size=df.shape, p=[1-probability, probability])
+        spikes = np.random.normal(loc=0, scale=magnitude, size=df.shape) * mask
+        df_spikes = df + spikes
+        return df_spikes
+
+    @staticmethod
+    def introduce_dropouts(df, probability=0.01):
+        """
+        Introduce dropouts by randomly removing certain samples from the data
+        by setting the corresponding current values to zero.
+        """
+        mask = np.random.choice([0, 1], size=df.shape, p=[probability, 1-probability])
+        df_dropouts = df * mask
+        return df_dropouts
+
+    @staticmethod
+    def introduce_drifts(df, amplitude=2, frequency=0.01):
+        """
+        Introduce drifts by gradually changing the current values over time
+        by adding a sinusoidal or polynomial trend to the data.
+        """
+        t = np.arange(df.shape[0])
+        drifts = amplitude * np.sin(2 * np.pi * frequency * t)
+        df_drifts = df + drifts[:, np.newaxis]
+        return df_drifts
+
+    @staticmethod
+    def introduce_transients(df, magnitude=10, duration=10):
+        """
+        Introduce transients by adding short-duration, high-amplitude disturbances
+        to the data, which can represent sudden changes in the system conditions or external interferences.
+        """
+        t = np.arange(df.shape[0])
+        transients = np.zeros(df.shape)
+        start_idx = np.random.randint(low=0, high=df.shape[0]-duration)
+        end_idx = start_idx + duration
+        transients[start_idx:end_idx] = magnitude
+        df_transients = df + transients
+        return df_transients
+    
+    @staticmethod
+    def add_anomalies(df, spike_magnitude=50, spike_probability=0.1, dropout_probability=0.01,
+                      drift_amplitude=70, drift_frequency=0.01, transient_magnitude=1000, transient_duration=10):
+        """
+        Add anomalies to the 3 phase current data by introducing spikes, dropouts, drifts, and transients.
+        """
+        # Add spikes
+        df_spikes = AnomalyGenerator.introduce_spikes(df, spike_magnitude, spike_probability)
+        
+        # Add dropouts
+        df_dropouts = AnomalyGenerator.introduce_dropouts(df_spikes, dropout_probability)
+        
+        # Add drifts
+        df_drifts = AnomalyGenerator.introduce_drifts(df_dropouts, drift_amplitude, drift_frequency)
+        
+        # Add transients
+        df_transients = AnomalyGenerator.introduce_transients(df_drifts, transient_magnitude, transient_duration)
+        
+        return df_transients
+
+
+
+
+
+
 
 
 #     def DecisionTreeClassifier():
