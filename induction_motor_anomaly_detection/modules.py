@@ -390,6 +390,49 @@ class AnomalyDetector:
         else:
             print("No anomalous feature vectors detected.")
 
+
+
+
+
+class GaussianMixtureModel:
+    def __init__(self, n_components=1, covariance_type='full', k_threshold_std_dev=3, concat = True):
+        self.n_components = n_components
+        self.covariance_type = covariance_type
+        self.k_threshold_std_dev = k_threshold_std_dev
+        self.gmm = None
+        self.X = np.array([])
+        self.concat = concat
+
+    def fit(self, X):
+        """
+        Fit the Gaussian Mixture Model to the training data.
+        """
+        
+        if self.gmm is None:
+            self.gmm = GaussianMixture(n_components=self.n_components, covariance_type=self.covariance_type)
+            self.gmm.fit(X)
+            self.X = X
+        else:
+            self.X = np.concatenate((self.X, X), axis=0)
+            if self.concat :
+                self.gmm.fit(self.X)
+            else:
+                self.gmm.fit(X)
+            
+        # This tells the GMM to initialize the model parameters using the k-means algorithm, which can be more efficient than the default random initialization for large datasets
+
+    def predict_anomalies(self, X_test):
+        """
+        Predict whether the data is anomalous or not based on the GMM.
+        """
+        scores = self.gmm.score_samples(self.X)
+        k = self.k_threshold_std_dev
+        mean_score = np.mean(scores)
+        std_score = np.std(scores)
+        threshold = mean_score - k * std_score
+        is_anomaly = self.gmm.score_samples(X_test) < threshold
+        return is_anomaly
+
 class NoiseGenerator:
     """
     This class generates noise in a given Pandas DataFrame.
