@@ -28,7 +28,7 @@ class Scaler:
         
         best_pipeline_index = np.argmax(scores)
         self.scaler = pipelines[best_pipeline_index].steps[0][1]
-        print(f'using {self.scaler}')
+        # print(f'using {self.scaler}')
 
     def fit_unlabelled_data(self, dataframe):
         scalers = [MinMaxScaler(), StandardScaler(), RobustScaler()]
@@ -54,7 +54,7 @@ class Scaler:
 
         best_scaler_index = np.argmax(scores)
         self.scaler = scalers[best_scaler_index]
-        print(f'using {self.scaler}')
+        # print(f'using {self.scaler}')
 
 
         scaled_data = self.scaler.transform(data)
