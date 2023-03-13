@@ -1,0 +1,2 @@
+docker build -t induction_motor_anomaly_detection .
+docker run -it -v /home/c2_user/3_phase_induction_motor_anomaly_detection/induction_motor_anomaly_detection/cleaned_files:/data -v /home/c2_user/3_phase_induction_motor_anomaly_detection/induction_motor_anomaly_detection:/logs induction_motor_anomaly_detection python main.py --directory /data --log_file /logs/logs.log
